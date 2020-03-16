@@ -19,3 +19,4 @@ gt <- generation.time("empirical", df_wide$positive[-seq_len(33)])
 estR <- estimate.R(df_wide$positive[-seq_len(33)], gt, methods = c("EG", "ML", "SB", "TD"))
 estR$estimates$SB %>% plot
 estR$estimates$SB$R %>% last
+
