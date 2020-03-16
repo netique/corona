@@ -101,9 +101,17 @@ ons_con_sample <-
     replace = T
   ) %>% pull
 
+
+dates_counts <- NULL
+  for (i in 1:length(prediction$date_imputed)) {
+    dates_counts[[i]] <-
+      rep(prediction$date_imputed[i], prediction$cases_pd[i])
+  }
+dates_counts %<>% unlist %>% as_date
+
 casebycase <-
   tibble(
-    confirmation = rep(prediction$date_imputed, prediction$cases_pd),
+    confirmation = dates_counts,
     days_to_confirmation = ons_con_sample
   ) %>%
   mutate(est_onset = confirmation - days_to_confirmation)
@@ -122,11 +130,24 @@ df_shift <-
     cbc_cum %>% transmute(
       date = est_onset,
       positive = est_onset_cum,
-      type = "est_onset"
-    )
+      type = "skuteční"
+    ),
+    prediction %>% transmute(date = date_imputed, positive = cases_round, type = "potvrzení")
   )
 
-df_shift %>% ggplot(aes(date, positive, col = type)) + geom_line() + ylim(0,1000)
+df_shift %>% rename() %>% ggplot(aes(date, positive)) +
+  geom_line(data = df_shift %>% filter(type != "confirmed"), aes(col = type), size = 1.25) +
+  geom_point(data = df_shift %>% filter(type == "confirmed")) +
+  coord_cartesian(ylim = c(0, 35000)) +
+  xlim(as.Date("2020-02-15"), as.Date("2020-03-25")) +
+  # geom_hline(yintercept = 3711) +
+  geom_hline(yintercept = 26210, col = "red", linetype = "dashed") +
+  # geom_vline(xintercept = as.Date("2020-03-16")) +
+  geom_vline(xintercept = as.Date("2020-03-23"), col = "red", linetype = "dashed") +
+  geom_point(aes(x=as.Date("2020-03-23"), y=26210), colour="red", size = 2) +
+  scale_color_manual(values = c("blue", "red", "black")) +
+  labs(col= "Nakažení", title = "Odhad a projekce skutečných a potvrzených případů")+
+  theme(legend.position = c(.2, .33)) 
 
 a <- df_wide %>% transmute(date, positive, type = "confirmed")
 b <-  cbc_cum %>% transmute(
@@ -137,4 +158,17 @@ b <-  cbc_cum %>% transmute(
 left_join(a,b, by = "date") %>%
   na.omit %>% transmute(date, cases_confirmed = positive.x, cases_onset = positive.y) %>%
   write_csv("confirmed_estimated_onset.csv") %>% view
-# ------------
+
+
+b<- df_wide %>% transmute(date, positive, type = "confirmed")
+c<-cbc_cum %>% transmute(
+  date = est_onset,
+  positive = est_onset_cum,
+  type = "est_onset"
+)
+d<-prediction %>% transmute(date = date_imputed, positive = cases_round, type = "est_confirmed")
+
+e <- left_join(d,c, by ="date")
+e[,c(1,2,4)] %>% pivot_longer(-date) %>% ggplot(aes(date, value, col = name)) + geom_line()
+
+
