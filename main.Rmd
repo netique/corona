@@ -28,6 +28,7 @@ raw <-
   fromJSON(
     "https://api.apify.com/v2/key-value-stores/K373S4uCFR9W1K8ei/records/LATEST?disableRedirect=true"
   )
+
 tibble(
 infected = raw$infected,
 recovered = raw$recovered,

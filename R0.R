@@ -15,8 +15,8 @@ df_wide <-
     day = seq(1, length(raw$testedCases$date))
   ) %>% as_tibble()
 
-gt <- generation.time("empirical", df_wide$positive[-seq_len(33)])
-estR <- estimate.R(df_wide$positive[-seq_len(33)], gt, methods = c("EG", "ML", "SB", "TD"))
+gt <- generation.time("empirical", df_cum$positive)
+estR <- estimate.R(df_cum$positive, gt, methods = c("EG", "ML", "SB", "TD"))
 estR$estimates$SB %>% plot
 estR$estimates$SB$R %>% last
 
