@@ -114,11 +114,7 @@ df_cum$est_onset_mean <- temp2 %>% as_date
 
 df_cum %>% write_csv("table.csv")
 
-df_cum %>% ggplot(aes(date, positive_pred)) +
-  geom_line() +
-  geom_line(aes(est_onset_mean, positive_pred), col="red") +
-  # coord_cartesian(ylim= c(0,40000)) +
-  theme_minimal()
+
 
 # dates_quantiles %>% bind_rows()
 
@@ -132,26 +128,30 @@ onsets_for_positives <- bind_rows(temp)
 # cbc %<>% count(est_onset) %>% complete(data.frame(est_onset = est_onset_date_range), fill = list(n = 0)) %>% mutate(n_cum = cumsum(n))
 
 df_full <- left_join(df_cum, onsets_for_positives, by = "positive_pred")
+
+# library(quantreg)
+# 
+# quantile_fit <- rq(log(positive_pred) ~ dates, tau = .5, data = df_full)
+# predict(quantile_fit, list(dates = dates_to_predict)) %>% plot
 ```
+## graf
 
 ```{r}
+df_cum %>% ggplot(aes(date, positive_pred)) +
+  geom_line() +
+  geom_line(aes(est_onset_mean, positive_pred), col="red") +
+  # coord_cartesian(ylim= c(0,40000)) +
+  theme_minimal()
+```
+
+
+## with points
+```{r eval=FALSE, include=FALSE}
 df_full %>% 
   ggplot(aes(date, positive_pred)) +
   geom_line() +
   geom_point(aes(dates, positive_pred)) +
   # coord_cartesian(ylim= c(0,40000)) +
-  theme_minimal()
-```
-
-## graf
-
-jelikož simulujeme zpětně onset u predikovaných případů, křivky se vždy nakonec protnou, je třeba simulovat dostatečně dopředu - týdny a pak lze osu y omezit
-
-```{r eval=FALSE, include=FALSE}
-df_full %>% select(-c(tested, positive)) %>%  pivot_longer(-date) %>%
-  ggplot(aes(date, value, col = name)) +
-  geom_line() +
-  coord_cartesian(ylim= c(0,40000)) +
   theme_minimal()
 ```
 
