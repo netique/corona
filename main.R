@@ -6,7 +6,7 @@ raw <-
   fromJSON(
     "https://api.apify.com/v2/key-value-stores/K373S4uCFR9W1K8ei/records/LATEST?disableRedirect=true"
   )
-
+raw %>% view
 raw$totalTested
 (now <- max(c(raw$infected, raw$fromBabisNewspapers$totalInfected)))
 
@@ -146,8 +146,10 @@ df_shift %>% rename() %>% ggplot(aes(date, positive)) +
   geom_vline(xintercept = as.Date("2020-03-23"), col = "red", linetype = "dashed") +
   geom_point(aes(x=as.Date("2020-03-23"), y=26210), colour="red", size = 2) +
   scale_color_manual(values = c("blue", "red", "black")) +
-  labs(col= "Nakažení", title = "Odhad a projekce skutečných a potvrzených případů")+
-  theme(legend.position = c(.2, .33)) 
+  labs(caption = "Model vychází z časové prodlevy mezi nástupem příznaků a diagnózou. Černé body představují reálná data z ÚZIS (k 15. 3. 2020).\nhttps://www.kaggle.com/codelion/covid19-outbreak-epidemiological-line-list-data", x= "datum", y = "počet", col = "Nakažení", title = "Odhad a projekce skutečných a potvrzených případů")+
+  theme(legend.position = c(.2, .33)) +
+  geom_label(x=as.Date("2020-03-23"), y=26210, label = '26 210 skutečných případů k 23. 3. 2020', label.size = NA, x = 2, y = 8, vjust = -.3, hjust = 1.03) 
+  # geom_label(aes(x=as.Date("2020-03-23"), y=26210, label="26 210 skutečných případů k 23. 3. 2020"), size = 3.3,hjust=1.02, vjust=-.5)
 
 a <- df_wide %>% transmute(date, positive, type = "confirmed")
 b <-  cbc_cum %>% transmute(
@@ -171,4 +173,4 @@ d<-prediction %>% transmute(date = date_imputed, positive = cases_round, type = 
 e <- left_join(d,c, by ="date")
 e[,c(1,2,4)] %>% pivot_longer(-date) %>% ggplot(aes(date, value, col = name)) + geom_line()
 
-
+e[,c(1,2,4)] %>% view
