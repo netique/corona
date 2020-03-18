@@ -1,0 +1,132 @@
+---
+title: "Reproduction number daily"
+author: "Jan Netík"
+date: "18 3 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load packages.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(jsonlite)
+library(tidyverse)
+library(magrittr)
+library(pander)
+library(distcrete)
+library(lubridate)
+remotes::install_github("reconhub/incidence")
+library(incidence)
+remotes::install_github("annecori/EpiEstim")
+library(EpiEstim)
+
+select <- dplyr::select
+```
+
+Load up-to-date data from MZCR and show main numbers.
+
+```{r}
+raw <-
+  fromJSON(
+    "https://api.apify.com/v2/key-value-stores/K373S4uCFR9W1K8ei/records/LATEST?disableRedirect=true"
+  )
+
+tibble(
+  infected = raw$infected,
+  tested = raw$numberOfTestedGraph$value %>% last,
+  recovered = raw$recovered
+) %>% pander
+```
+
+Prepare table with cumulative numbers.
+
+```{r}
+df_cum <-
+  tibble(
+    date = as.Date(raw$totalPositiveTests$date),
+    positive = raw$totalPositiveTests$value
+  )
+tested = tibble(
+  tested = raw$numberOfTestedGraph$value,
+  date = as.Date(raw$numberOfTestedGraph$date)
+)
+
+df_cum <- left_join(df_cum, tested, by = "date") %>% mutate_if(is.character, parse_number)
+
+df_cum %>% pander
+```
+
+Limit dataset from outbreak beginning to last complete day (usually, no data is given after 7 PM). Prepare incidence (day-to-day) data for further use.
+
+```{r}
+df_cum %<>% filter(positive > 0 & date + hours(19) < now())
+
+inc <- tibble(dates = df_cum$date, I = diff(c(0, df_cum$positive)))
+```
+
+## Time-dependent reproduction number estimate $R_t$
+
+Based on 7-day sliding window and serial interval parameters from [https://doi.org/10.1101/2020.02.19.20025452](https://doi.org/10.1101/2020.02.19.20025452).
+
+>Mean and standard deviation are 3.96 (95% CI 3.53-4.39) and 4.75 (95% CI 4.46-5.07) days, respectively, with 12.6% of reports indicating pre-symptomatic transmission.
+
+Note that `EpiEstim` package does not allow to estimate $R_t$ with negative serial interval values, so following model relies on truncated normal approximation with mean 5.21 [4.47,5.95] and SD 3.66 [3.20,4.26]. Below, we provide lognorm and gamma distribution alternatives.
+
+Here are the plots and table further detailing $R_t$ by each window (denoted with day-day range):
+
+```{r}
+dailyR <- estimate_R(inc, method = "parametric_si",
+                  config = make_config(list(
+                  mean_si = 2.02, std_si = 2.78)))
+
+plot(dailyR, "all")
+
+dailyR$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>%  pander
+```
+Let's compute discrete distribution from lognormal and gamma distributions (fitted on truncated (>0) data) from aforementioned article. Note that lognorm fit original distribution better (see AIC).
+
+|Distribution | Mean/Shape [95% CI] | SD/Scale [95% CI] | AIC |
+|:------|-------|--------|-------| --|
+|Lognormal | 2.02 [1.76,2.31] |2.78 [2.39,3.25]|1,886.73|
+|Gamma | 1.46 [1.38,1.54] |0.78 [0.72,0.84]| 1,898.63|
+
+```{r}
+# Lognormal (Shape, Scale) 2.02 [1.76,2.31] 2.78 [2.39,3.25] 
+si_distr_lognorm <- distcrete("lnorm", interval = 1, 2.02, 2.78)$r(2000) %>% extract(.<20)
+
+freq_lognorm <- table(si_distr_lognorm) %>% as.vector
+si_distr_lognorm <- c(0, freq_lognorm/sum(freq_lognorm))
+
+# Gamma (Shape, Scale) 1.46 [1.38,1.54] 0.78 [0.72,0.84]
+si_distr_gamma <- distcrete("gamma", interval = 1, 1.46, 0.78)$r(2000) %>% extract(.<20)
+
+freq_gamma <- table(si_distr_gamma) %>% as.vector
+si_distr_gamma <- c(0, freq_gamma/sum(freq_gamma))
+```
+
+
+```{r}
+dailyR_lognorm <- estimate_R(inc, 
+                  method = "non_parametric_si",
+                  config = make_config(list(
+                      si_distr = si_distr_lognorm)))
+
+plot(dailyR_lognorm, "all")
+
+dailyR_lognorm$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>%  pander
+```
+
+
+```{r}
+dailyR_gamma <- estimate_R(inc, 
+                  method = "non_parametric_si",
+                  config = make_config(list(
+                      si_distr = si_distr_gamma)))
+
+plot(dailyR_gamma, "all")
+
+dailyR_gamma$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>%  pander
+```

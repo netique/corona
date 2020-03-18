@@ -118,17 +118,17 @@ R0 <- lm2R0_sample(inc_fit$before$model, w, n = 2500)
 hist(R0, col = "grey", border = "white", main = "Distribution of R0", sub = " SI mean 4.7, SD 2.9, function r2R0 from epitrix, gamma distr.")
 summary(growth_R0)
 
-
+growth_R0 %>% sd
 
 # plot(inc) %>% add_incidence_fit(inc_fit)
 
 # nothing ot show after peak - no peak to date
 
 plot_Ri <- function(estimate_R_obj) {
-  p_I <- plot(estimate_R_obj, "incid", add_imported_cases = F, )  # plots the incidence
+  # p_I <- plot(estimate_R_obj, "incid", add_imported_cases = F, )  # plots the incidence
   p_SI <- plot(estimate_R_obj, "SI")  # plots the serial interval distribution
   p_Ri <- plot(estimate_R_obj, "R")
-  return(gridExtra::grid.arrange(p_I, p_SI, p_Ri, ncol = 1))
+  return(gridExtra::grid.arrange(p_SI, p_Ri, ncol = 1))
 }
 
 hubei_res_parametric_si <-
@@ -139,7 +139,7 @@ hubei_res_parametric_si <-
 
 plot(hubei_res_parametric_si, "R") + labs(title = "Estimated Instantaneous Reproduction Number", caption = "7-day sliding window, ")
 plot(hubei_res_parametric_si, "SI") + labs(caption = "serial interval distribution")
-
+plot_Ri(hubei_res_uncertain_si)
 
 hubei_res_uncertain_si <- estimate_R(inc, method = "uncertain_si", 
                                      config = make_config(list(mean_si = 4.7,
