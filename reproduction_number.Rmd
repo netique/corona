@@ -1,12 +1,16 @@
 ---
 title: "Reproduction number daily"
 author: "Jan Netík"
-date: "18 3 2020"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r x, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+library(lubridate)
+cat(paste0("#### Report generated: ", now()))
 ```
 
 Load packages.
@@ -40,6 +44,9 @@ tibble(
   recovered = raw$recovered
 ) %>% pander
 ```
+
+
+
 
 Prepare table with cumulative numbers.
 
