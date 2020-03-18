@@ -76,6 +76,8 @@ inc <- tibble(dates = df_cum$date, I = diff(c(0, df_cum$positive)))
 
 ## Time-dependent reproduction number estimate $R_t$
 
+### Probably best results is from model using log normal SI distribution (see below)
+
 Based on 7-day sliding window and serial interval parameters from [https://doi.org/10.1101/2020.02.19.20025452](https://doi.org/10.1101/2020.02.19.20025452).
 
 >Mean and standard deviation are 3.96 (95% CI 3.53-4.39) and 4.75 (95% CI 4.46-5.07) days, respectively, with 12.6% of reports indicating pre-symptomatic transmission.
@@ -100,6 +102,7 @@ Let's compute discrete distribution from lognormal and gamma distributions (fitt
 |Lognormal | 2.02 [1.76,2.31] |2.78 [2.39,3.25]|1,886.73|
 |Gamma | 1.46 [1.38,1.54] |0.78 [0.72,0.84]| 1,898.63|
 
+
 ```{r}
 # Lognormal (Shape, Scale) 2.02 [1.76,2.31] 2.78 [2.39,3.25] 
 si_distr_lognorm <- distcrete("lnorm", interval = 1, 2.02, 2.78)$r(2000) %>% extract(.<20)
@@ -114,6 +117,7 @@ freq_gamma <- table(si_distr_gamma) %>% as.vector
 si_distr_gamma <- c(0, freq_gamma/sum(freq_gamma))
 ```
 
+## Log normal
 
 ```{r}
 dailyR_lognorm <- estimate_R(inc, 
@@ -125,7 +129,7 @@ plot(dailyR_lognorm, "all")
 
 dailyR_lognorm$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>%  pander
 ```
-
+## Gamma
 
 ```{r}
 dailyR_gamma <- estimate_R(inc, 
