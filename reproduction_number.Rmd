@@ -12,13 +12,14 @@ knitr::opts_chunk$set(echo = FALSE)
 library(lubridate)
 cat(paste0("#### Report generated: ", now()))
 ```
-
+#### Data source: [https://onemocneni-aktualne.mzcr.cz/covid-19](https://onemocneni-aktualne.mzcr.cz/covid-19)
 
 ```{r, message=FALSE, warning=FALSE}
 library(jsonlite)
 library(tidyverse)
 library(magrittr)
 library(pander)
+library(growthcurver)
 library(distcrete)
 library(lubridate)
 remotes::install_github("reconhub/incidence")
@@ -29,7 +30,7 @@ library(EpiEstim)
 select <- dplyr::select
 ```
 
-Main up-to-date numbers from MZČR:
+
 
 ```{r}
 raw <-
@@ -41,30 +42,20 @@ tibble(
   infected = raw$infected,
   tested = raw$totalTested,
   recovered = raw$recovered
-) %>% pander
+) %>% pander(caption = "Quick numbers")
 ```
 
 
 
-Prepare table with cumulative numbers.
 
 ```{r}
 df_cum <-
   tibble(
     date = as.Date(raw$totalPositiveTests$date),
     positive = as.integer(raw$totalPositiveTests$value)
-  )
+  ) %>% filter(positive > 0)
 
-# apify fail - no uptodate tested numbers
-
-# tested = tibble(
-#   tested = raw$numberOfTestedGraph$value,
-#   date = as.Date(raw$numberOfTestedGraph$date)
-# )
-
-# df_cum <- left_join(df_cum, tested, by = "date") %>% mutate_if(is.character, parse_number)
-
-df_cum %>% pander
+df_cum %>% pander(caption = "Cumulative number of positive cases")
 ```
 
 For following analyses, we use *limited dataset* from outbreak beginning to last complete day (usually, *fully closed* data are given around 9 AM *the day after*).
@@ -72,12 +63,42 @@ For following analyses, we use *limited dataset* from outbreak beginning to last
 Please, **check the validity by hand**.
 
 ```{r}
-df_cum %<>% filter(positive > 0 & date + days(1) + hours(10) < now())
+df_cum %<>% filter(date + days(1) + hours(10) < now())
 
 inc <- tibble(dates = df_cum$date, I = diff(c(0, df_cum$positive)))
 
 tail(df_cum, 1) %>% pander(caption = "Last complete day used for all following analyses")
 ```
+
+## Simple fitting
+
+```{r}
+mod_exp <- lm(log(positive) ~ date, data = df_cum)
+mod_log <- SummarizeGrowth(seq(1, length(df_cum$date)), df_cum$positive)
+
+days_of_prediction <- 7
+
+date = seq.Date(
+      first(df_cum$date),
+      by = 1,
+      length.out = length(df_cum$date) + days_of_prediction
+    )
+
+predicted <-
+  tibble(
+    date,
+    logistic = predict(mod_log$model,
+                           newdata = list(t = seq(
+                             1, length(df_cum$date) + days_of_prediction
+                           ))),
+    exponential = exp(predict(mod_exp, newdata = list(date)))
+  )
+
+df_cum %<>% right_join(predicted, by = "date")
+
+df_cum %>% pivot_longer(-c(date, positive)) %>% ggplot(aes(date, value, col = name)) + geom_line(size = 1.1) + geom_point(aes(date, positive), col = "black", na.rm = T, size = 1.5) + scale_x_date(date_breaks = "7 days", date_minor_breaks = "1 day", date_labels = "%Y-%m-%d") + labs(title = "Positive cases per day and simple projections for 7 days", y = "number of positive cases", col = "growth")
+```
+
 
 ## Time-dependent reproduction number estimate $R_t$
 
