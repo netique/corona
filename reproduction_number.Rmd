@@ -40,11 +40,10 @@ raw <-
 
 tibble(
   infected = raw$infected,
-  tested = raw$numberOfTestedGraph$value %>% last,
+  tested = raw$totalTested,
   recovered = raw$recovered
 ) %>% pander
 ```
-
 
 
 
@@ -54,24 +53,29 @@ Prepare table with cumulative numbers.
 df_cum <-
   tibble(
     date = as.Date(raw$totalPositiveTests$date),
-    positive = raw$totalPositiveTests$value
+    positive = as.integer(raw$totalPositiveTests$value)
   )
-tested = tibble(
-  tested = raw$numberOfTestedGraph$value,
-  date = as.Date(raw$numberOfTestedGraph$date)
-)
 
-df_cum <- left_join(df_cum, tested, by = "date") %>% mutate_if(is.character, parse_number)
+# apify fail - no uptodate tested numbers
+
+# tested = tibble(
+#   tested = raw$numberOfTestedGraph$value,
+#   date = as.Date(raw$numberOfTestedGraph$date)
+# )
+
+# df_cum <- left_join(df_cum, tested, by = "date") %>% mutate_if(is.character, parse_number)
 
 df_cum %>% pander
 ```
 
-Limit dataset from outbreak beginning to last complete day (usually, no data is given after 7 PM). Prepare incidence (day-to-day) data for further use.
+Limit dataset from outbreak beginning to last complete day (usually, *fully closed* data are given around 9 AM *the day after*). Prepare incidence (day-to-day) data for further use. Please, **check the validity by hand**.
 
 ```{r}
-df_cum %<>% filter(positive > 0 & date + hours(19) < now())
+df_cum %<>% filter(positive > 0 & date + days(1) + hours(10) < now())
 
 inc <- tibble(dates = df_cum$date, I = diff(c(0, df_cum$positive)))
+
+tail(df_cum, 1) %>% pander(caption = "Last complete day used for all following analyses")
 ```
 
 ## Time-dependent reproduction number estimate $R_t$

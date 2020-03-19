@@ -9,14 +9,13 @@ raw <-
 
 df_wide <-
   data.frame(
-    tested = as.integer(cumsum(raw$testedCases$value)),
-    positive = as.integer(raw$totalPositiveTests$value)[-1],
-    date = raw$testedCases$date %>% lubridate::as_date() +1,
-    day = seq(1, length(raw$testedCases$date))
+    positive = as.integer(raw$totalPositiveTests$value),
+    date = raw$totalPositiveTests$date %>% lubridate::as_date(),
+    day = seq(1, length(raw$totalPositiveTests$value))
   ) %>% as_tibble()
 
-gt <- generation.time("empirical", df_cum$positive)
-estR <- estimate.R(df_cum$positive, gt, methods = c("EG", "ML", "SB", "TD"))
+gt <- generation.time("empirical", df_wide$positive)
+estR <- estimate.R(df_wide$positive, gt, methods = c("EG", "ML", "SB", "TD"))
 estR$estimates$SB %>% plot
 estR$estimates$SB$R %>% last
 
