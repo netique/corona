@@ -101,7 +101,7 @@ plot(dailyR, "all")
 
 
 ```{r}
-dailyR$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>% pander
+dailyR$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>% pander(split.tables = Inf, split.cells = 1)
 ```
 
 <!-- Let's compute discrete distribution from lognormal and gamma distributions (fitted on truncated (>0) data) from aforementioned article. Note that lognorm fit original distribution better (see AIC). -->
@@ -141,7 +141,7 @@ plot(dailyR_lognorm, "all")
 
 
 ```{r}
-dailyR_lognorm$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>%  pander
+dailyR_lognorm$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>% pander(split.tables = Inf, split.cells = 1)
 ```
 ## Gamma
 
@@ -156,5 +156,5 @@ plot(dailyR_gamma, "all")
 
 
 ```{r}
-dailyR_gamma$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>%  pander
+dailyR_gamma$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>% pander(split.tables = Inf, split.cells = 1)
 ```
