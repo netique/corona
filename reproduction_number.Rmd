@@ -5,7 +5,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r x, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
@@ -13,9 +13,8 @@ library(lubridate)
 cat(paste0("#### Report generated: ", now()))
 ```
 
-Load packages.
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE}
 library(jsonlite)
 library(tidyverse)
 library(magrittr)
@@ -30,7 +29,7 @@ library(EpiEstim)
 select <- dplyr::select
 ```
 
-Load up-to-date data from MZCR and show main numbers.
+Main up-to-date numbers from MZČR:
 
 ```{r}
 raw <-
@@ -68,7 +67,9 @@ df_cum <-
 df_cum %>% pander
 ```
 
-Limit dataset from outbreak beginning to last complete day (usually, *fully closed* data are given around 9 AM *the day after*). Prepare incidence (day-to-day) data for further use. Please, **check the validity by hand**.
+For following analyses, we use *limited dataset* from outbreak beginning to last complete day (usually, *fully closed* data are given around 9 AM *the day after*).
+<!-- Prepare incidence (day-to-day) data . -->
+Please, **check the validity by hand**.
 
 ```{r}
 df_cum %<>% filter(positive > 0 & date + days(1) + hours(10) < now())
@@ -96,10 +97,16 @@ dailyR <- estimate_R(inc, method = "parametric_si",
                   mean_si = 2.02, std_si = 2.78)))
 
 plot(dailyR, "all")
-
-dailyR$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>%  pander
 ```
-Let's compute discrete distribution from lognormal and gamma distributions (fitted on truncated (>0) data) from aforementioned article. Note that lognorm fit original distribution better (see AIC).
+
+
+```{r}
+dailyR$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>% pander
+```
+
+<!-- Let's compute discrete distribution from lognormal and gamma distributions (fitted on truncated (>0) data) from aforementioned article. Note that lognorm fit original distribution better (see AIC). -->
+
+Here are the parameters for log normal and gamma distributions (fitted on truncated (>0) data) from aforementioned article. Note that log normal fit original distribution better (see AIC).
 
 |Distribution | Mean/Shape [95% CI] | SD/Scale [95% CI] | AIC |
 |:------|-------|--------|-------| --|
@@ -130,7 +137,10 @@ dailyR_lognorm <- estimate_R(inc,
                       si_distr = si_distr_lognorm)))
 
 plot(dailyR_lognorm, "all")
+```
 
+
+```{r}
 dailyR_lognorm$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>%  pander
 ```
 ## Gamma
@@ -142,6 +152,9 @@ dailyR_gamma <- estimate_R(inc,
                       si_distr = si_distr_gamma)))
 
 plot(dailyR_gamma, "all")
+```
 
+
+```{r}
 dailyR_gamma$R %>% rename("window beginning" = t_start, "window ending" = t_end, "R mean" = "Mean(R)", "R standard deviation" =  "Std(R)", "2.5th percentile" = "Quantile.0.025(R)", "50th percentile" = "Median(R)", "97.5th percentile" = "Quantile.0.975(R)") %>% transmute(`window beginning`,`window ending`,`R mean`,`R standard deviation`,`2.5th percentile`,`50th percentile`,`97.5th percentile`) %>% set_rownames(paste0(.$`window beginning`, "--", .$`window ending`)) %>% select(-c(`window beginning`, `window ending`)) %>%  pander
 ```
