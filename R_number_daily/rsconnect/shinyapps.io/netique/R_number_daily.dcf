@@ -1,0 +1,12 @@
+name: R_number_daily
+title: R_number_daily
+username:
+account: netique
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1970546
+bundleId: 2905631
+url: https://netique.shinyapps.io/R_number_daily/
+when: 1584806052.22487
+asMultiple: FALSE
+asStatic: FALSE

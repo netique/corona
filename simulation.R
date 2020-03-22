@@ -2,40 +2,55 @@ library(tidyverse)
 library(magrittr)
 library(EpiModel)
 
-raw <-
-  fromJSON(
-    "https://api.apify.com/v2/key-value-stores/K373S4uCFR9W1K8ei/records/LATEST?disableRedirect=true"
-  )
+# assumptions:
+# consider 12% probability of infection per transmissible act
+# between a susceptible and an infected person
+# 
+# 5 transmissible acts per day (close co-worker contacts)
+# 18 days to recovery (presume that worker is productive after 18 days)
+# 
+# intervention begins at day 10 (worker starts to show symptoms and quarantine himself)
+# intervention is maximally effective, lowering transmission prob. 10 times
 
-df_cum <-
-  tibble(
-    date = as.Date(raw$totalPositiveTests$date),
-    positive = as.integer(raw$totalPositiveTests$value)
-  )
+# starting with 49 workers and 1 infected (zero recovered)
 
-df_cum %<>% filter(positive > 0 & date + days(1) + hours(10) < now())
+sim_days <- 60 # days to simulate for
 
-inc <- tibble(dates = df_cum$date, I = diff(c(0, df_cum$positive)))
 
-#####
-citizens <- 1319000 # Praha
-
-i <- raw$infectedByRegion[1,2] # Praha
-r <- 2
-s <- citizens - r
-
-c <- 1 # constant for N scaling
-
-R_0 <- 2.127
-
-days_to_recovery <- 18
-
-beta <- R_0 * (1 / days_to_recovery)
-
-param <- param.icm(inf.prob = beta, act.rate = 5, rec.rate = 1/days_to_recovery)
-init <- init.icm(s.num = (s-i)/c, i.num = i/c, r.num = r/c)
-control <- control.icm(type = "SIR", nsims = 5, nsteps = 30, verbose = T)
+param <- param.icm(inf.prob = 0.12, act.rate = 5, rec.rate = 1/(18),
+                  # inter.start = 10, inter.eff = .95
+                   )
+init <- init.icm(s.num = 49, i.num = 1, r.num = 0)
+control <- control.icm(type = "SIR", nsims = 100,
+                       nsteps = sim_days, verbose = T)
 mod <- icm(param, init, control)
 
-plot(mod, y = "i.num", sim.lines = T, mean.smooth = F, qnts.smooth = F, popfrac = T, grid = T, legend = T)
-plot(mod)
+plot(mod, y = "r.num", sim.lines = T, mean.smooth = F, qnts.smooth = F, popfrac = T, grid = T, legend = T)
+plot(mod, propfrac = T)
+
+available_workers <- apply(mod$epi$s.num, 1, median)+ apply(mod$epi$r.num, 1, median)
+
+
+
+param_inter <- param.icm(inf.prob = 0.12, act.rate = 5, rec.rate = 1/(18),
+                   inter.start = 10, inter.eff = .9
+)
+init_inter <- init.icm(s.num = 49, i.num = 1, r.num = 0)
+control_inter <- control.icm(type = "SIR", nsims = 100,
+                       nsteps = sim_days, verbose = T)
+mod_inter <- icm(param_inter, init_inter, control_inter)
+
+plot(mod_inter, y = "i.num", sim.lines = T, mean.smooth = F, qnts.smooth = F, popfrac = T, grid = T, legend = T)
+plot(mod_inter, propfrac = T)
+
+available_workers_inter <- apply(mod_inter$epi$s.num, 1, median)+ apply(mod_inter$epi$r.num, 1, median)
+
+
+daily_prodictivity <- tibble(day = seq(1,sim_days),
+                             productivity = available_workers * (34125/30),
+                             productivity_inter = available_workers_inter * (34125/30))
+
+daily_prodictivity %<>% mutate(saved = productivity_inter - productivity)
+daily_prodictivity$saved[1:30] %>% sum
+
+daily_prodictivity %>% pivot_longer(-c(day,saved)) %>%  ggplot(aes(day, value, col= name)) + geom_line()

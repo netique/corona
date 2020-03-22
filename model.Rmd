@@ -1,0 +1,167 @@
+---
+title: "model"
+author: "Jan Netík"
+date: "22 3 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+
+```{r}
+library(tidyverse)
+library(magrittr)
+library(EpiModel)
+
+quiet <- function(x) { 
+  sink(tempfile()) 
+  on.exit(sink()) 
+  invisible(force(x)) 
+} 
+```
+
+## assumptions
+* consider 12% probability of infection per transmissible act between a susceptible and an infected person
+ 
+* 5 transmissible acts per day (close co-worker contacts)
+ 18 days to recovery (presume that worker is productive after 18 days)
+ 
+* intervention begins at day 10 (worker starts to show symptoms and quarantine himself)
+
+* intervention is maximally effective, lowering transmission prob. 10 times
+
+* starting with 49 workers and 1 infected (zero recovered)
+
+```{r}
+sim_days <- 60 # days to simulate for
+
+param <- param.icm(inf.prob = 0.12,
+                   act.rate = 5,
+                   rec.rate = 1 / 18)
+
+init <- init.icm(s.num = 49,
+                 i.num = 1,
+                 r.num = 0)
+
+control <- control.icm(
+  type = "SIR",
+  nsims = 100,
+  nsteps = sim_days,
+  verbose = T
+)
+
+mod <- quiet(icm(param, init, control))
+```
+
+Prevalence of infection
+```{r}
+plot(mod, y = "r.num", sim.lines = T, mean.smooth = F, qnts.smooth = F, popfrac = T, grid = T, legend = T)
+```
+
+Prevalence of compartments
+```{r}
+plot(mod, propfrac = T)
+```
+
+## Avaiable workers estimation
+
+Assuming susceptible (but not infected) and recovered workers are immediately 100% productive. Note that we are not accounting for 14-day quarantine after remission, but so does not the intervention model -- **the difference between those is crucial**.
+
+*Calculate median of simulated estimates per day -- get one number per day:*
+
+```{r}
+available_workers <-
+  apply(mod$epi$s.num, 1, median) + apply(mod$epi$r.num, 1, median)
+```
+
+## Intervention model
+
+All parameters are the same as in previous model. Intervention (self-quarantine of the worker which starts to show first symptoms) begins on 10th day since the first infected case in a group and it is highly effective.
+
+```{r}
+param_inter <-
+  param.icm(
+    inf.prob = 0.12,
+    act.rate = 5,
+    rec.rate = 1 / (18),
+    inter.start = 10,
+    inter.eff = .9
+  )
+
+init_inter <- init.icm(s.num = 49,
+                       i.num = 1,
+                       r.num = 0)
+
+control_inter <- control.icm(
+  type = "SIR",
+  nsims = 100,
+  nsteps = sim_days,
+  verbose = T
+)
+mod_inter <- quiet(icm(param_inter, init_inter, control_inter))
+```
+
+Prevalence of infection
+```{r}
+plot(
+  mod_inter,
+  y = "i.num",
+  sim.lines = T,
+  mean.smooth = F,
+  qnts.smooth = F,
+  popfrac = T,
+  grid = T,
+  legend = T
+)
+```
+
+Prevalence of compartments
+```{r}
+plot(mod_inter, propfrac = T)
+```
+
+## Invervention benefit
+
+Calculating with productivity per day (34125/30):
+
+```{r}
+available_workers_inter <-
+  apply(mod_inter$epi$s.num, 1, median) + apply(mod_inter$epi$r.num, 1, median)
+
+daily_prodictivity <- tibble(
+  day = seq(1, sim_days),
+  productivity = available_workers * (34125 /
+                                        30),
+  productivity_inter = available_workers_inter * (34125 /
+                                                    30)
+)
+
+daily_prodictivity %<>% mutate(saved = productivity_inter - productivity)
+```
+
+## Total CZK saved in first month (for 50 people)
+
+Simply sum of difference intervention-nothing productivity
+```{r}
+daily_prodictivity$saved[1:30] %>% sum
+```
+
+Benefit with 5273700 workers:
+```{r}
+(daily_prodictivity$saved[1:30] %>% sum) * (5273700/50)
+
+```
+
+
+```{r}
+daily_prodictivity %>% pivot_longer(-c(day)) %>%  ggplot(aes(day, value, col= name)) +
+  geom_line(size= 1.2) +
+  labs(title = "Daily productivity by model and savings of productivity", y = "Productivity estimate in CZK")
+
+```

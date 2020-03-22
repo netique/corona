@@ -43,6 +43,8 @@ tibble(
   tested = raw$totalTested,
   recovered = raw$recovered
 ) %>% pander(caption = "Quick numbers")
+
+
 ```
 
 
@@ -56,6 +58,14 @@ df_cum <-
   ) %>% filter(positive > 0)
 
 df_cum %>% pander(caption = "Cumulative number of positive cases")
+
+
+a<-tibble(date = df_cum$date, positive = diff(c(0, df_cum$positive)), tested = diff(c(0, raw$numberOfTestedGraph %>% filter(date >= as.Date("2020-03-01")) %>% dplyr::select(value) %>% pull, NA)))
+        
+a$dif <- a$positive/a$tested
+
+a %>% ggplot(aes(date, dif)) + geom_line() + geom_smooth()
+
 ```
 
 For following analyses, we use *limited dataset* from outbreak beginning to last complete day (usually, *fully closed* data are given around 9 AM *the day after*).
@@ -158,11 +168,6 @@ dailyR_lognorm <- estimate_R(inc,
                       si_distr = si_distr_lognorm)))
 
 plot(dailyR_lognorm, "all")
-
-plot(dailyR_lognorm, "SI") + labs(title = "Distribuce serial intervalů" ,x = "čas (dny)", y = "relativní četnost", caption = "Lognorm aproximace podle http://doi.org/dp8k. Případy s negativním serial intervalem nejsou zobrazeny.") + geom_line(size=.5)
-ggsave("si_dist.png",device = "png", width = 6, height = 3.5, dpi = 300)
-savePlot("si_dist.pdf", type = "pdf", dev)
-dev.cur()
 ```
 
 
