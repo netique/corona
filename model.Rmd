@@ -80,7 +80,7 @@ available_workers <-
   apply(mod$epi$s.num, 1, median) + apply(mod$epi$r.num, 1, median)
 ```
 
-## Intervention model
+## Intervention model (inter)
 
 All parameters are the same as in previous model. Intervention (self-quarantine of the worker which starts to show first symptoms) begins on 10th day since the first infected case in a group and it is highly effective.
 
@@ -126,6 +126,57 @@ Prevalence of compartments
 plot(mod_inter, propfrac = T)
 ```
 
+
+## Quarantine at 5th day (inter2)
+
+```{r}
+param_inter2 <-
+  param.icm(
+    inf.prob = 0.12,
+    act.rate = 5,
+    rec.rate = 1 / (18),
+    inter.start = 5,
+    inter.eff = .9
+  )
+
+init_inter2 <- init.icm(s.num = 49,
+                       i.num = 1,
+                       r.num = 0)
+
+control_inter2 <- control.icm(
+  type = "SIR",
+  nsims = 100,
+  nsteps = sim_days,
+  verbose = T
+)
+mod_inter2 <- quiet(icm(param_inter2, init_inter2, control_inter2))
+```
+
+Prevalence of infection
+```{r}
+plot(
+  mod_inter2,
+  y = "i.num",
+  sim.lines = T,
+  mean.smooth = F,
+  qnts.smooth = F,
+  popfrac = T,
+  grid = T,
+  legend = T
+)
+```
+
+Prevalence of compartments
+```{r}
+plot(mod_inter2, propfrac = T)
+```
+```{r}
+available_workers_inter2 <-
+  apply(mod_inter2$epi$s.num, 1, median) + apply(mod_inter2$epi$r.num, 1, median)
+
+```
+
+
 ## Invervention benefit
 
 Calculating with productivity per day (34125/30):
@@ -139,6 +190,8 @@ daily_prodictivity <- tibble(
   productivity = available_workers * (34125 /
                                         30),
   productivity_inter = available_workers_inter * (34125 /
+                                                    30),
+  productivity_inter2 = available_workers_inter2 * (34125 /
                                                     30)
 )
 
@@ -160,7 +213,7 @@ Benefit with 5273700 workers:
 
 
 ```{r}
-daily_prodictivity %>% pivot_longer(-c(day)) %>%  ggplot(aes(day, value, col= name)) +
+daily_prodictivity %>% pivot_longer(-c(day, saved)) %>%  ggplot(aes(day, value, col= name)) +
   geom_line(size= 1.2) +
   labs(title = "Daily productivity by model and savings of productivity", y = "Productivity estimate in CZK")
 
