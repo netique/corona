@@ -15,7 +15,7 @@ ui <- fluidPage(
   ),
   fluidRow(
     column(
-      6,
+      8,
       h4(div(
         style = "text-align:justify",
         HTML(paste0(
@@ -42,12 +42,12 @@ ui <- fluidPage(
       align = "center"
     )
   ),
-  # br(),
   
-  fluidRow(column(10, withSpinner(
+  fluidRow(column(12, withSpinner(
     plotOutput("plots")
   ))),
-  fluidRow(column(10, DTOutput("table"), class = "display nowrap"), align = "center")
+  fluidRow(column(12, DTOutput("table")), align = "center"), br(),
+  fluidRow(column(12, downloadButton("download_table", "Download table")), align = "right"), br()
 )
 
 server <- function(input, output) {
@@ -182,14 +182,28 @@ output$table <-
     table() %>% datatable(
       rownames = FALSE,
       selection = "none",
-      options = list(dom = "tp",
-                     searching = FALSE)
+      callback = JS(
+        'table.page("last").draw(false);'
+      ),
+      options = list(dom = "tip",
+                     searching = FALSE,
+                     pageLength = 10)
     ) %>%
       formatRound(
         columns = c("Mean", "SD", "2.5th perc.", "50th perc.", "97.5th perc."),
         digits = 2
-      )
+      ) 
   }, server = FALSE)
+
+output$download_table <- downloadHandler(
+  filename = function() {
+    paste("Czech-R-number_", Sys.Date(), ".csv", sep="")
+  },
+  content = function(file) {
+    write_csv(table(), file)
+  }
+)
+
 }
 
 # Run the application
