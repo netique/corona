@@ -6,22 +6,23 @@ library(shinycssloaders)
 library(lubridate)
 # remotes::install_github("annecori/EpiEstim")
 library(EpiEstim)
+library(DT)
 
 ui <- fluidPage(
+  titlePanel(
+    strong("Reproduction number in Czechia"),
+    "Reproduction number in Czechia"
+  ),
   fluidRow(
     column(
-      5,
-      titlePanel(
-        strong("Reproduction number in Czechia"),
-        "Reproduction number in Czechia"
-      ),
+      6,
       h4(div(
         style = "text-align:justify",
-        HTML(
+        HTML(paste0(
           "Based on 7-day sliding window and serial interval distribution approximated by truncated lognormal distribution with parameters from
          <a href='https://doi.org/10.1101/2020.02.19.20025452'>Zhanwei et al. (2020)</a>. Data sourced from
-         <a href='https://onemocneni-aktualne.mzcr.cz/api/v1/covid-19'>official JSONs by MZČR & ÚZIS</a>."
-        )
+         <a href='https://onemocneni-aktualne.mzcr.cz/api/v1/covid-19'>official JSONs by MZČR & ÚZIS</a> (last change at source: ", textOutput("data_sourced", inline = TRUE)," CEST)."
+        ))
       )),
       em(
         HTML(
@@ -29,33 +30,37 @@ ui <- fluidPage(
         )
       )
     ),
-    column(2, br(),
+    column(2,
            h1(strong(uiOutput(
              "r"
            ))),
+           strong(uiOutput("last_day")),
            align = "center"),
     column(
-      3,
-      br(),
-      br(),
+      2, h5(strong("Quick overview")),
       tableOutput("quick_table"),
-      uiOutput("timestamp"),
       align = "center"
     )
   ),
-  br(),
+  # br(),
   
   fluidRow(column(10, withSpinner(
     plotOutput("plots")
   ))),
-  fluidRow(column(10, tableOutput("table"), class = "display nowrap"), align = "center")
+  fluidRow(column(10, DTOutput("table"), class = "display nowrap"), align = "center")
 )
 
 server <- function(input, output) {
-  set.seed(1425)
+
+  output$data_sourced <- renderText({
+    HTML(modified() %>% as.character())
+  })
   
-  output$timestamp <- renderUI({
-    HTML(paste0("Source data updated:<br>", modified(), " CEST"))
+  output$last_day <- renderUI({
+    HTML(paste0(
+      "Last window end:<br>",
+      table() %>% tail(1) %>% pull(`Window end`)
+    ))
   })
   
   modified <- reactive({
@@ -128,8 +133,8 @@ server <- function(input, output) {
         "Recovered" = 3,
         "Dead" = 4
       ) %>%
-      tail(1)
-  })
+      tail(1) %>% t
+  }, rownames = TRUE, colnames = FALSE)
   
   output$r <- renderUI({
     r_num <- round(last(fit()$R[, 3]), 2)
@@ -152,36 +157,39 @@ server <- function(input, output) {
     plot(fit(), "all")
   })
   
-  output$table <- renderTable({
-    tab <- fit()$R %>% rename(
-      "window beginning" = t_start,
-      "window ending" = t_end,
-      "R mean" = "Mean(R)",
-      "R standard deviation" =  "Std(R)",
-      "2.5th percentile" = "Quantile.0.025(R)",
-      "50th percentile" = "Median(R)",
-      "97.5th percentile" = "Quantile.0.975(R)"
-    ) %>% transmute(
-      `window beginning`,
-      `window ending`,
-      `R mean`,
-      `R standard deviation`,
-      `2.5th percentile`,
-      `50th percentile`,
-      `97.5th percentile`
-    )
+table <- reactive({
+    tab <- fit()$R %>%
+      rename(
+        "Mean" = "Mean(R)",
+        "SD" = "Std(R)",
+        "2.5th perc." = "Quantile.0.025(R)",
+        "50th perc." = "Median(R)",
+        "97.5th perc." = "Quantile.0.975(R)"
+      ) %>% transmute(
+        `Window end` = as.character(as_date(t_end, origin = "2020-02-29")),
+        `Mean`,
+        `SD`,
+        `2.5th perc.`,
+        `50th perc.`,
+        `97.5th perc.`
+      )
     
-    tab %<>% transmute(
-      window = paste0("Days ", `window beginning`, "–", `window ending`),
-      `R mean`,
-      `R standard deviation`,
-      `2.5th percentile`,
-      `50th percentile`,
-      `97.5th percentile`
-    ) %>% column_to_rownames("window")
     tab
-    
-  }, rownames = T, colnames = T)
+})
+
+output$table <-
+  renderDT({
+    table() %>% datatable(
+      rownames = FALSE,
+      selection = "none",
+      options = list(dom = "tp",
+                     searching = FALSE)
+    ) %>%
+      formatRound(
+        columns = c("Mean", "SD", "2.5th perc.", "50th perc.", "97.5th perc."),
+        digits = 2
+      )
+  }, server = FALSE)
 }
 
 # Run the application
