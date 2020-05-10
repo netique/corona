@@ -7,6 +7,7 @@ library(lubridate)
 # remotes::install_github("annecori/EpiEstim")
 library(EpiEstim)
 library(DT)
+library(forecast)
 
 ui <- fluidPage(
   titlePanel(
@@ -22,7 +23,8 @@ ui <- fluidPage(
           "Based on 7-day sliding window and serial interval distribution approximated by truncated lognormal distribution with parameters from
          <a href='https://doi.org/10.3201/eid2606.200357'>Zhanwei et al. (2020)</a>. Data sourced from
          <a href='https://onemocneni-aktualne.mzcr.cz/api/v1/covid-19'>official JSONs by MZČR & ÚZIS</a> (last change at source: ", textOutput("data_sourced", inline = TRUE),
-          " CEST). Analysis based on ", strong("trend component only"), " (as achieved with ", em("multiple seasonal decomposition"), ") is available <a href='https://netique.shinyapps.io/R_CZ_trend/'>here</a>."
+          ' CEST). The incidence is treated with ', em("multiple seasonal decomposition"), ' and all computations henceforth are based only on trend free of "seasonality" 
+          (mainly due to poor testing at weekends). Analysis based on raw data is available <a href="https://netique.shinyapps.io/R_number_daily/">here</a>.'
         ))
       )),
       em(
@@ -105,6 +107,8 @@ server <- function(input, output) {
   
   fit <- reactive({
     inc <- df() %>% transmute(dates = date, I = infected_per_day)
+    # Multiple seasonal decomposition, only trend retained
+    inc$I <- mstl(inc$I)[, "Trend"]
     
     # Lognormal (Shape, Scale) 2.02 [1.76,2.31] 2.78 [2.39,3.25]
     # si_distr_lognorm <-
