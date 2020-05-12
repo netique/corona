@@ -47,8 +47,15 @@ ui <- fluidPage(
   ),
   
   fluidRow(column(12, withSpinner(
-    plotOutput("plots")
+    plotOutput("plot_r")
   ))),
+  fluidRow(column(12, withSpinner(
+    plotOutput("plot_inc")
+  ))),
+  fluidRow(column(12, withSpinner(
+    plotOutput("plot_si")
+  ))),
+  
   fluidRow(column(12, DTOutput("table")), align = "center"), br(),
   fluidRow(column(12, downloadButton("download_table", "Download table")), align = "right"), br()
 )
@@ -159,8 +166,15 @@ server <- function(input, output) {
     }
   })
   
-  output$plots <- renderPlot({
-    plot(fit(), "all")
+  output$plot_r <- renderPlot({
+    plot(fit(), "R")
+  })
+  
+  output$plot_si <- renderPlot({
+    plot(fit(), "SI")
+  })
+  output$plot_inc <- renderPlot({
+    plot(fit(), "incid")
   })
   
 table <- reactive({
