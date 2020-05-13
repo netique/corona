@@ -22,7 +22,7 @@ ui <- fluidPage(
         HTML(paste0(
           "Based on 7-day sliding window and serial interval distribution approximated by truncated lognormal distribution with parameters from
          <a href='https://doi.org/10.3201/eid2606.200357'>Zhanwei et al. (2020)</a>. Data sourced from
-         <a href='https://onemocneni-aktualne.mzcr.cz/api/v1/covid-19'>official JSONs by MZČR & ÚZIS</a> (last change at source: ", textOutput("data_sourced", inline = TRUE),
+         <a href='https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19'>official JSONs by MZČR & ÚZIS</a> (last change at source: ", textOutput("data_sourced", inline = TRUE),
           ' CEST). The incidence is treated with ', em("multiple seasonal decomposition"), ' and all computations henceforth are based only on trend free of "seasonality" 
           (mainly due to poor testing at weekends). Analysis based on raw data is available <a href="https://netique.shinyapps.io/R_number_daily/">here</a>.'
         ))
@@ -77,36 +77,38 @@ server <- function(input, output) {
     fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v1/covid-19/testy.json")$modified %>%
       as_datetime %>% with_tz("Europe/Prague")
   })
-  tested <-
-    fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v1/covid-19/testy.json")$data %>%
-    transmute(
-      date = dmy(datum),
-      tested_per_day = `testy-den`,
-      tested_cumul = `testy-celkem`
-    )
-  
-  infected <-
-    fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v1/covid-19/nakaza.json") %>%
-    transmute(
-      date = as_date(datum),
-      infected_per_day = pocetDen,
-      infected_cumul = pocetCelkem
-    )
-  
-  recovered_dead <-
-    fromJSON(
-      "https://onemocneni-aktualne.mzcr.cz/api/v1/covid-19/nakazeni-vyleceni-umrti-testy.json"
-    )$data %>%
-    transmute(
-      date = as_date(datum),
-      recovered_cumul = kumulovany_pocet_vylecenych,
-      dead_cumul = kumulovany_pocet_umrti
-    )
-  
-  # identical(recovered_dead$date, tested$date, infected$date)
-  
-  # filter out "nonpandemic days"
+ 
   df <- reactive({
+    tested <-
+      fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/testy.json")$data %>%
+      transmute(
+        date = as_date(datum),
+        tested_per_day = prirustkovy_pocet_testu,
+        tested_cumul = kumulativni_pocet_testu
+      )
+    
+    infected <-
+      fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakaza.json")$data %>%
+      transmute(
+        date = as_date(datum),
+        infected_per_day = prirustkovy_pocet_nakazenych,
+        infected_cumul = kumulativni_pocet_nakazenych
+      )
+    
+    recovered_dead <-
+      fromJSON(
+        "https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakazeni-vyleceni-umrti-testy.json"
+      )$data %>%
+      transmute(
+        date = as_date(datum),
+        recovered_cumul = kumulativni_pocet_vylecenych,
+        dead_cumul = kumulativni_pocet_umrti
+      )
+    
+    # identical(recovered_dead$date, tested$date, infected$date)
+    
+    # filter out "nonpandemic days"
+    
     bind_cols(tested, infected, recovered_dead) %>%
       as_tibble %>% dplyr::select(-c(date1, date2)) %>%
       filter(date >= "2020-03-01")
@@ -167,15 +169,16 @@ server <- function(input, output) {
   })
   
   output$plot_r <- renderPlot({
-    plot(fit(), "R")
-  })
+    plot(fit(), "R") + scale_fill_manual("", label = "95% CI", values = alpha("black", .15)) + theme_minimal() + theme(legend.position = c(.9, .75))
+  }, res = 120)
   
   output$plot_si <- renderPlot({
-    plot(fit(), "SI")
-  })
+    plot(fit(), "SI") + theme_minimal()
+  }, res = 120)
+  
   output$plot_inc <- renderPlot({
-    plot(fit(), "incid")
-  })
+    plot(fit(), "incid") + theme_minimal()
+  }, res = 120)
   
 table <- reactive({
     tab <- fit()$R %>%
