@@ -73,8 +73,14 @@ server <- function(input, output) {
   })
   
   modified <- reactive({
+    max(
     fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/testy.json")$modified %>%
+      as_datetime %>% with_tz("Europe/Prague"),
+    fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakaza.json")$modified %>%
+      as_datetime %>% with_tz("Europe/Prague"),
+    fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakazeni-vyleceni-umrti-testy.json")$modified %>%
       as_datetime %>% with_tz("Europe/Prague")
+    )
   })
 
 df <- reactive({
@@ -104,14 +110,18 @@ df <- reactive({
       dead_cumul = kumulativni_pocet_umrti
     )
   
-  # identical(recovered_dead$date, tested$date, infected$date)
-  
-  # filter out "nonpandemic days"
-
-    bind_cols(tested, infected, recovered_dead) %>%
-      as_tibble %>% dplyr::select(-c(date1, date2)) %>%
-      filter(date >= "2020-03-01")
-  })
+  # when data change in the morning, JSONs are modifed separately,
+  # which causes an error probably due to uneven nrows of tables
+  # being bound together -- so ensure to work with equal nrows
+  minimal_nrows <- min(nrow(tested), nrow(infected), nrow(recovered_dead))
+    
+  # bind together & filter out "nonpandemic days"
+  bind_cols(tested[seq(1, minimal_nrows), ],
+            infected[seq(1, minimal_nrows), ],
+            recovered_dead[seq(1, minimal_nrows), ]) %>%
+    as_tibble %>% dplyr::select(-c(date1, date2)) %>%
+    filter(date >= "2020-03-01")
+})
   
   fit <- reactive({
     inc <- df() %>% transmute(dates = date, I = infected_per_day)
