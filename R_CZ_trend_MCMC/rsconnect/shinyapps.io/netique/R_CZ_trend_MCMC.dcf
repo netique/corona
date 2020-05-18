@@ -1,0 +1,12 @@
+name: R_CZ_trend_MCMC
+title: R_CZ_trend_MCMC
+username:
+account: netique
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2317911
+bundleId: 3161626
+url: https://netique.shinyapps.io/R_CZ_trend_MCMC/
+when: 1589804455.60202
+asMultiple: FALSE
+asStatic: FALSE

@@ -11,8 +11,8 @@ library(forecast)
 
 ui <- fluidPage(
   titlePanel(
-    strong("Reproduction number in Czechia"),
-    "Reproduction number in Czechia"
+    strong('Reproduction number in Czechia – trend component only'),
+    'Reproduction number in Czechia – trend component only'
   ),
   fluidRow(
     column(

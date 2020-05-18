@@ -1,5 +1,4 @@
 library(shiny)
-library(dqshiny)
 library(jsonlite)
 library(tidyverse)
 library(magrittr)
@@ -8,22 +7,27 @@ library(lubridate)
 # remotes::install_github("annecori/EpiEstim")
 library(EpiEstim)
 library(DT)
+library(forecast)
+
+select <- dplyr::select
 
 ui <- fluidPage(
   titlePanel(
-    strong("Reproduction number in Czechia – raw data"),
-    "Reproduction number in Czechia – raw data"
+    strong('Reproduction number in Czechia'),
+    'Reproduction number in Czechia – trend component only & MCMC estimated SI distributions'
   ),
+  fluidRow(column(12, strong("Trend component only & MCMC estimated SI distributions", style = "font-size:18px;"))),
   fluidRow(
     column(
       8,
       h4(div(
         style = "text-align:justify",
         HTML(paste0(
-          "Based on 7-day sliding window and serial interval distribution approximated by truncated lognormal distribution with parameters from
+          "Based on 7-day sliding window and serial interval distribution approximated by lognormal distribution derived directly from non-interval-censored infector-infectee pairs dates data by
          <a href='https://doi.org/10.3201/eid2606.200357'>Du et al. (2020)</a>. Data sourced from
          <a href='https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19'>official JSONs by MZČR & ÚZIS</a> (last change at source: ", textOutput("data_sourced", inline = TRUE),
-          " CEST). Analysis based on ", strong("trend component only"), " (as achieved with ", em("multiple seasonal decomposition"), ") is available <a href='https://netique.shinyapps.io/R_CZ_trend/'>here</a>."
+          ' CEST). The incidence is treated with ', em("multiple seasonal decomposition"), ' and all computations henceforth are based only on trend free of "seasonality" 
+          (mainly due to poor testing at weekends). Analysis based on raw data is available <a href="https://netique.shinyapps.io/R_number_daily/">here</a>. <b>Note that the estimation may take a few minutes. Please wait.</b>'
         ))
       )),
       em(
@@ -73,41 +77,41 @@ server <- function(input, output) {
   })
   
   modified <- reactive({
-    fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/testy.json")$modified %>%
+    fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v1/covid-19/testy.json")$modified %>%
       as_datetime %>% with_tz("Europe/Prague")
   })
-
-df <- reactive({
-  tested <-
-    fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/testy.json")$data %>%
-    transmute(
-      date = as_date(datum),
-      tested_per_day = prirustkovy_pocet_testu,
-      tested_cumul = kumulativni_pocet_testu
-    )
-  
-  infected <-
-    fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakaza.json")$data %>%
-    transmute(
-      date = as_date(datum),
-      infected_per_day = prirustkovy_pocet_nakazenych,
-      infected_cumul = kumulativni_pocet_nakazenych
-    )
-  
-  recovered_dead <-
-    fromJSON(
-      "https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakazeni-vyleceni-umrti-testy.json"
-    )$data %>%
-    transmute(
-      date = as_date(datum),
-      recovered_cumul = kumulativni_pocet_vylecenych,
-      dead_cumul = kumulativni_pocet_umrti
-    )
-  
-  # identical(recovered_dead$date, tested$date, infected$date)
-  
-  # filter out "nonpandemic days"
-
+ 
+  df <- reactive({
+    tested <-
+      fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/testy.json")$data %>%
+      transmute(
+        date = as_date(datum),
+        tested_per_day = prirustkovy_pocet_testu,
+        tested_cumul = kumulativni_pocet_testu
+      )
+    
+    infected <-
+      fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakaza.json")$data %>%
+      transmute(
+        date = as_date(datum),
+        infected_per_day = prirustkovy_pocet_nakazenych,
+        infected_cumul = kumulativni_pocet_nakazenych
+      )
+    
+    recovered_dead <-
+      fromJSON(
+        "https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakazeni-vyleceni-umrti-testy.json"
+      )$data %>%
+      transmute(
+        date = as_date(datum),
+        recovered_cumul = kumulativni_pocet_vylecenych,
+        dead_cumul = kumulativni_pocet_umrti
+      )
+    
+    # identical(recovered_dead$date, tested$date, infected$date)
+    
+    # filter out "nonpandemic days"
+    
     bind_cols(tested, infected, recovered_dead) %>%
       as_tibble %>% dplyr::select(-c(date1, date2)) %>%
       filter(date >= "2020-03-01")
@@ -115,22 +119,15 @@ df <- reactive({
   
   fit <- reactive({
     inc <- df() %>% transmute(dates = date, I = infected_per_day)
-    
-    # Lognormal (Shape, Scale) 2.02 [1.76,2.31] 2.78 [2.39,3.25]
-    # si_distr_lognorm <-
-    #   distcrete("lnorm", interval = 1, 2.02, 2.78)$r(2000) %>%
-    #   extract(. < 20)
-    # freq_lognorm <- table(si_distr_lognorm) %>% as.vector
-    # si_distr_lognorm <- c(0, freq_lognorm / sum(freq_lognorm))
-    # write_rds(si_distr_lognorm, "si_distr_lognorm.rds")
+    # Multiple seasonal decomposition, only trend retained
+    inc$I <- mstl(inc$I)[, "Trend"]
     
     # load generated distribution, for the sake of server load
-    si_distr_lognorm <- read_rds("si_distr_lognorm.rds")
+    si_sample <- read_rds("si_sample.rds")
     
-    dailyR_lognorm <-
-      estimate_R(inc,
-                 method = "non_parametric_si",
-                 config = make_config(list(si_distr = si_distr_lognorm)))
+    dailyR_lognorm <- estimate_R(inc,
+                                 method = "si_from_sample",
+                                 si_sample = si_sample)
     
     dailyR_lognorm
   })
@@ -217,7 +214,7 @@ output$table <-
 
 output$download_table <- downloadHandler(
   filename = function() {
-    paste("Czech-R-number_", Sys.Date(), ".csv", sep = "")
+    paste("Czech-R-number_", Sys.Date(), ".csv", sep="")
   },
   content = function(file) {
     write_csv(table(), file)
