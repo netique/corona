@@ -21,10 +21,10 @@ ui <- fluidPage(
         style = "text-align:justify",
         HTML(paste0(
           "Based on 7-day sliding window and serial interval distribution approximated by truncated lognormal distribution with parameters from
-         <a href='https://doi.org/10.3201/eid2606.200357'>Zhanwei et al. (2020)</a>. Data sourced from
+         <a href='https://doi.org/10.3201/eid2606.200357'>Du et al. (2020)</a>. Data sourced from
          <a href='https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19'>official JSONs by MZČR & ÚZIS</a> (last change at source: ", textOutput("data_sourced", inline = TRUE),
           ' CEST). The incidence is treated with ', em("multiple seasonal decomposition"), ' and all computations henceforth are based only on trend free of "seasonality" 
-          (mainly due to poor testing at weekends). Analysis based on raw data is available <a href="https://netique.shinyapps.io/R_number_daily/">here</a>.'
+          (mainly due to poor testing at weekends). Analysis based on raw data is available <a href="https://netique.shinyapps.io/R_number_daily/">here</a>, analysis with serial interval distributions estimated using Metropolis-Hastings Markov chain Monte Carlo is available <a href="https://netique.shinyapps.io/R_CZ_trend_MCMC/">here</a>.'
         ))
       )),
       em(

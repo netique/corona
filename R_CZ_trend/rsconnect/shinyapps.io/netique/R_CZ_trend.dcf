@@ -5,8 +5,8 @@ account: netique
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2275022
-bundleId: 3141227
+bundleId: 3162844
 url: https://netique.shinyapps.io/R_CZ_trend/
-when: 1589363770.08195
+when: 1589824892.68819
 asMultiple: FALSE
 asStatic: FALSE
