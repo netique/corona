@@ -11,8 +11,8 @@ library(DT)
 
 ui <- fluidPage(
   titlePanel(
-    strong("Reproduction number in Czechia – raw data"),
-    "Reproduction number in Czechia – raw data"
+    strong("Reproduction number in Czechia – raw data & uncertain serial interval"),
+    "Reproduction number in Czechia – uncertain SI"
   ),
   fluidRow(
     column(
@@ -20,10 +20,10 @@ ui <- fluidPage(
       h4(div(
         style = "text-align:justify",
         HTML(paste0(
-          "Based on 7-day sliding window and serial interval distribution approximated by truncated lognormal distribution with parameters from
+          "Based on 7-day sliding window and several serial interval distributions (in order to better account for ", strong("uncertainty"), "), with parameters from
          <a href='https://doi.org/10.3201/eid2606.200357'>Du et al. (2020)</a>. Data sourced from
          <a href='https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19'>official JSONs by MZČR & ÚZIS</a> (last change at source: ", textOutput("data_sourced", inline = TRUE),
-          " CEST). Analysis based on ", strong("trend component only"), " (as achieved with ", em("multiple seasonal decomposition"), ') is available <a href="https://netique.shinyapps.io/R_CZ_trend/">here</a>, analysis with serial interval distributions estimated directly from infector-infectee pairs data using Metropolis-Hastings Markov chain Monte Carlo is available <a href="https://netique.shinyapps.io/R_CZ_trend_MCMC/">here</a>.'
+          " CEST). Analysis based on uncertain SI and ", strong("isolated trend component"), " (as achieved with ", em("multiple seasonal decomposition"), ') is available <a href="https://netique.shinyapps.io/R_CZ_trend_uncertainty/">here</a>, analysis with serial interval distributions estimated directly from infector-infectee pairs data using Metropolis-Hastings Markov chain Monte Carlo is available <a href="https://netique.shinyapps.io/R_CZ_trend_MCMC/">here</a> (trend only).'
         ))
       )),
       em(
@@ -126,23 +126,30 @@ df <- reactive({
   fit <- reactive({
     inc <- df() %>% transmute(dates = date, I = infected_per_day)
     
-    # Lognormal (Shape, Scale) 2.02 [1.76,2.31] 2.78 [2.39,3.25]
-    # si_distr_lognorm <-
-    #   distcrete("lnorm", interval = 1, 2.02, 2.78)$r(2000) %>%
-    #   extract(. < 20)
-    # freq_lognorm <- table(si_distr_lognorm) %>% as.vector
-    # si_distr_lognorm <- c(0, freq_lognorm / sum(freq_lognorm))
-    # write_rds(si_distr_lognorm, "si_distr_lognorm.rds")
+    # shorcut for defining symmetrical truncation
+    si_mean <- 3.96
+    si_sd <- 4.75
     
-    # load generated distribution, for the sake of server load
-    si_distr_lognorm <- read_rds("si_distr_lognorm.rds")
+    si_mean_trunc <- 2.75
+    si_sd_trunc <- 4
     
     dailyR_lognorm <-
       estimate_R(inc,
-                 method = "non_parametric_si",
-                 config = make_config(list(si_distr = si_distr_lognorm)))
-    
-    dailyR_lognorm
+                 method = "uncertain_si",
+                 config = make_config(
+                   list(
+                     mean_si = si_mean,
+                     std_mean_si = 5, # high SD
+                     min_mean_si = si_mean - si_mean_trunc,
+                     max_mean_si = si_mean + si_mean_trunc,
+                     std_si = si_sd,
+                     std_std_si = 4, # hight SD
+                     min_std_si = si_sd - si_sd_trunc,
+                     max_std_si = si_sd + si_sd_trunc,
+                     n1 = 100,
+                     n2 = 100
+                   )
+                 ))
   })
   
   output$quick_table <- renderTable({
@@ -176,7 +183,7 @@ df <- reactive({
   })
   
   output$plot_r <- renderPlot({
-    plot(fit(), "R") + scale_fill_manual("", label = "95% CI", values = alpha("black", .15)) + theme_minimal() + theme(legend.position = c(.9, .75))
+    plot(fit(), "R") + scale_fill_manual("", label = "95% CI", values = alpha("black", .15)) + theme_minimal() + theme(legend.position = c(.9, .75)) + coord_cartesian(ylim = c(0, 4))
   }, res = 120)
   
   output$plot_si <- renderPlot({
