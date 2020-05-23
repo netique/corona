@@ -57,15 +57,15 @@ server <- function(input, output) {
   output$r <- renderUI({
     r_num <- round(last(fit()$R[, 3]), 2)
     if (r_num > 1) {
-      HTML(paste0('<span style=\"color:red;font-size: 56px;\">',
+      withMathJax(HTML(paste0('<span style=\"color:red;font-size: 56px;\">',
                   "$R_t$ = ",
                   r_num,
                   '</span>',
-                  sep = ""))
+                  sep = "")))
     } else {
-      HTML(paste0("R = ",
+      withMathJax(HTML(paste0("$R_t$ = ",
                   r_num,
-                  sep = ""))
+                  sep = "")))
     }
   })
   
