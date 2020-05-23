@@ -5,9 +5,9 @@ account: netique
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1970546
-bundleId: 3181362
+bundleId: 3181582
 url: https://netique.shinyapps.io/R_number_daily/
-when: 1590227010.85989
+when: 1590235452.25617
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: .gitattributes|.RData|backup
