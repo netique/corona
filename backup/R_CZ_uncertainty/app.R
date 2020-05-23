@@ -8,8 +8,10 @@ library(lubridate)
 # remotes::install_github("annecori/EpiEstim")
 library(EpiEstim)
 library(DT)
+library(shinyalert)
 
-ui <- fluidPage(
+ui <- fluidPage(  useShinyalert(),
+
   titlePanel(
     strong("Reproduction number in Czechia – raw data & uncertain serial interval"),
     "Reproduction number in Czechia – uncertain SI"
@@ -60,6 +62,8 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
+  
+  shinyalert("New app!", "This version af the app is no longer updated. Please navigate yourself to the new version with detailed description and several available settings.", type = "info", confirmButtonText = "Let's see the new app", closeOnClickOutside = TRUE, showCancelButton = TRUE, callbackJS = "function(x) {if (x == true) {window.open('https://netique.shinyapps.io/R_number_daily/', '_self');}}", confirmButtonCol = "#32CD32")
 
   output$data_sourced <- renderText({
     HTML(modified() %>% as.character())

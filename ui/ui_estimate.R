@@ -33,5 +33,5 @@ estimate <-
     br(),
     fluidRow(column(
       12, downloadButton("download_table", "Download table")
-    ), align = "right", style="padding-bottom: 82px;")
+    ), align = "right")
   )

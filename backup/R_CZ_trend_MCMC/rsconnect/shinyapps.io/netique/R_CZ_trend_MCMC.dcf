@@ -5,8 +5,8 @@ account: netique
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2317911
-bundleId: 3162824
+bundleId: 3181404
 url: https://netique.shinyapps.io/R_CZ_trend_MCMC/
-when: 1589824576.96253
+when: 1590228868.21013
 asMultiple: FALSE
 asStatic: FALSE

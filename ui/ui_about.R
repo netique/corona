@@ -7,8 +7,8 @@ about <- tabPanel("About",
 </blockquote>'),
                   p(style = "text-align:justify", "To best of our knowledge, the web application provided here presents the only non-governmental estimate of the effective reproduction number $R_t$.",
                   "Our estimate strongly relies upon the results of papers published in impacted, peer-reviewed epidemiological journals (cited below, open access) and is based on serial interval (SI) parameters from Du et al. (2020). Daily incidence comes via an", a(href = "https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19", "official API"), "by the Ministry of Health of the Czech Republic and The Institute of Health Information and Statistics of the Czech Republic.",
-                  HTML('The coputation is done by R package "EpiEstim" (Cori et. al, 2013) develeped under the auspices of <a href="https://www.repidemicsconsortium.org/">R Epidemics Consortium (RECON)</a>.')),
-                  p(style = "text-align:justify", strong('In order to obtain the $R_t$ estimate, please continue to the "Estimate" tab at the top left. You can make several settings (incidence adjustment for "seasonality" and SI distribution(s) aproximation method) in the "Settings" tab next to it. Note that all plots in the "Estimate" section are interactive, so feel free to inspect them by pointing with the cursor. Also note the downloadable table below the plots.')),
+                  HTML('The computation is done using R package "<a href = "https://cran.r-project.org/package=EpiEstim">EpiEstim</a>" (Cori et. al, 2013) developed under the auspices of <a href="https://www.repidemicsconsortium.org/">R Epidemics Consortium (RECON)</a>.')),
+                  p(style = "text-align:justify", strong('In order to obtain the $R_t$ estimate, please continue to the "Estimate" tab located at the top left. In the "Settings" tab next to it, you can decide whether adjust the incidence for possible "seasonality", and choose among several SI distribution(s) acquisition methods. Note that all plots are interactive, so feel free to inspect them by hovering above the plot elements with your cursor. Using the mouse, it also is possible to zoom in on a given part of the plot or even scroll/pan the resulting view. Finally, notice that the table below the plots is downloadable.')),
 
                   h3("Quick overview"),
                   tags$ul(
@@ -27,7 +27,7 @@ about <- tabPanel("About",
                   
                   
                   h3("References"),
-                  tags$ul(class = "biblio", style = "padding-bottom: 82px;",
+                  tags$ul(class = "biblio",
                     tags$li(HTML('Du, Z., Xu, X., Wu, Y., Wang, L., Cowling, B. J., & Meyers, L. (2020). Serial interval of COVID-19 among publicly reported confirmed cases. <i>Emerging Infectious Diseases, 26</i>(6), 1341&#x2013;1343.'), a(href = "https://dx.doi.org/10.3201/eid2606.200357", "https://dx.doi.org/10.3201/eid2606.200357")),
                     
                     tags$li(HTML("Cori, A., Ferguson, N. M., Fraser, C., &amp; Cauchemez, S. (2013). A new framework and software to estimate time-varying reproduction numbers during epidemics. <i>American Journal of Epidemiology</i>, <i>178</i>(9), 1505&#x2013;1512."), a(href = "https://doi.org/10.1093/aje/kwt133", "https://doi.org/10.1093/aje/kwt133")),

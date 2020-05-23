@@ -57,7 +57,7 @@ server <- function(input, output) {
   output$r <- renderUI({
     r_num <- round(last(fit()$R[, 3]), 2)
     if (r_num > 1) {
-      HTML(paste0('<span style=\"color:red;font-size: 54px;\">',
+      HTML(paste0('<span style=\"color:red;font-size: 56px;\">',
                   "$R_t$ = ",
                   r_num,
                   '</span>',
@@ -72,7 +72,11 @@ server <- function(input, output) {
   output$last_day <- renderUI({
     HTML(paste0(
       "End of the last window: ",
-      table() %>% tail(1) %>% pull(`Window end`)
+      table() %>% tail(1) %>% pull(`Window end`),
+      "<br>Source updated: ", fromJSON(
+        "https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakaza.json"
+      )$modified %>%
+        as_datetime %>% with_tz("Europe/Prague") %>% as.character() %>% str_remove(".{3}$")
     ))
   })
   
