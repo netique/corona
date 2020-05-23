@@ -8,6 +8,7 @@ library(lubridate)
 # remotes::install_github("annecori/EpiEstim")
 library(EpiEstim)
 library(DT)
+library(plotly)
 
 ui <- fluidPage(
   titlePanel(
@@ -46,13 +47,13 @@ ui <- fluidPage(
   ),
   
   fluidRow(column(12, withSpinner(
-    plotOutput("plot_r")
+    plotlyOutput("plot_r")
   ))),
   fluidRow(column(12, withSpinner(
-    plotOutput("plot_inc")
+    plotlyOutput("plot_inc")
   ))),
   fluidRow(column(12, withSpinner(
-    plotOutput("plot_si")
+    plotlyOutput("plot_si")
   ))),
   
   fluidRow(column(12, DTOutput("table")), align = "center"), br(),
@@ -175,17 +176,108 @@ df <- reactive({
     }
   })
   
-  output$plot_r <- renderPlot({
-    plot(fit(), "R") + scale_fill_manual("", label = "95% CI", values = alpha("black", .15)) + theme_minimal() + theme(legend.position = c(.9, .75))
-  }, res = 120)
+  output$plot_r <- plotly::renderPlotly({
+    plot_decomposed <- plot(fit(), "R") %>% ggplot_build()
+    
+    p <- plot_decomposed$plot$data
+    
+    line_text <-
+      paste0(
+        "R: ",
+        p$meanR %>% round(2),
+        "\nWindow end: ",
+        p$end,
+        "\nLower CrI: ",
+        p$lower %>% round(2),
+        "\nUpper CrI: ",
+        p$upper %>% round(2)
+      )
+    
+    plt <- p %>% 
+      ggplot(aes(x = end, y = as.numeric(meanR))) +
+      geom_hline(yintercept = 1, linetype = "dashed") + 
+      geom_ribbon(aes(ymin = lower, ymax = upper, text = "", fill = "95% CrI"), alpha = .7) + scale_fill_manual("", values = "grey") +
+      geom_line(aes(text = line_text, col = "R(t) mean", group = 1)) +
+      scale_colour_manual("", values = "black") +
+      labs(title = "R(t) estimate",
+           x = "Window end date",
+           y = "R(t)") +
+      scale_x_date(date_breaks = "4 days") +
+      coord_cartesian(ylim = c(0, 4)) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 40))
+    
+    plt %<>% ggplotly(tooltip = "text") 
+    
+    plt$x$data[[2]]$hoverinfo <- "none"
+    plt$x$data[[2]]$name <- "95% CrI"
+    plt$x$data[[3]]$name <- "R(t) mean"
+    
+    plt %>% layout(hoverlabel=list(bgcolor="white")) %>% plotly::config(displayModeBar = F)
+    
+  })
   
-  output$plot_si <- renderPlot({
-    plot(fit(), "SI") + theme_minimal()
-  }, res = 120)
+  output$plot_si <- renderPlotly({
+    plot_decomposed <-
+      plot(fit(), "SI") %>% 
+    ggplot_build()
+    
+    p <- plot_decomposed$plot$data
+    
+    if ("SIDistr" %in% names(p)) {
+      p %<>% transmute(value = SIDistr, Var1 = Times, Var2 = 1)
+    }
+    
+    
+    
+    line_text <-
+      paste0("Frequency: ",
+             p$value %>% round(3),
+             "\nSerial interval: ",
+             p$Var1,
+             "\nDistribution: ",
+             p$Var2, "/", p$Var2 %>% max())
+    
+    plt <-
+      p %>% ggplot(aes(Var1, value, group = Var2)) +
+      geom_line(aes(text = line_text), alpha = .15) +
+      labs(title = "Explored serial interval distribution(s)",
+           x = "Serial interval [days]",
+           y = "Frequency") +
+      theme_minimal()
+    
+    plt %>% ggplotly(tooltip = "text") %>% layout(hoverlabel = list(bgcolor = "white")) %>% plotly::config(displayModeBar = F)
+    
+    
+  })
   
-  output$plot_inc <- renderPlot({
-    plot(fit(), "incid") + theme_minimal()
-  }, res = 120)
+  output$plot_inc <- renderPlotly({
+    
+    plot_decomposed <-
+      plot(fit(), "incid") %>% ggplot_build()
+    
+    p <- plot_decomposed$plot$data
+    
+    col_text <-
+      paste0("Incidence: ",
+             p$counts,
+             "\nDate: ",
+             p$dates)
+    
+    plt <-
+      p %>% transmute(Date = dates, "Daily incidence" = counts) %>%
+      ggplot(aes(x = Date, y = `Daily incidence`)) +
+      geom_col(aes(text = col_text)) +
+      labs(title = "Epidemic curve",
+           x = "Date",
+           y = "Daily incidence [count]") +
+      scale_x_date(date_breaks = "4 days") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 40))
+    
+    plt %<>% ggplotly(tooltip = "text")  %>%  layout(hoverlabel = list(bgcolor =
+                                                                         "white")) %>% plotly::config(displayModeBar = F)
+  })
   
 table <- reactive({
     tab <- fit()$R %>%
