@@ -11,6 +11,7 @@ library(dqshiny)
 library(forecast)
 library(shinythemes)
 library(plotly)
+library(shinyalert)
 
 source("ui/ui_estimate.R", local = T, encoding = "UTF-8")
 source("ui/ui_settings.R", local = T, encoding = "UTF-8")
@@ -21,23 +22,12 @@ ui <-
     windowTitle = "R estimate in Czechia",
     uiOutput("title"),
     # theme = "bootstrap.css",
-    selected = "About",
+    selected = "Estimate",
     
     estimate,
     settings,
     about,
     
-    # inline math fix
-    tags$div(
-      HTML(
-        "<script type='text/x-mathjax-config' >
-            MathJax.Hub.Config({
-            tex2jax: {inlineMath: [['$','$']]}
-            });
-            </script >
-            "
-      )
-    ),
     footer = list(
       HTML(
         '<div style = "clear: both; height: 112px;"></div>
@@ -47,7 +37,12 @@ ui <-
          </div>
          <div class = "footer-copyright">
             &copy; 2020 Jan Netík | source freely available at <a href="https://github.com/netique/corona"          >github.com/netique/corona</a>
-         </div>'
+         </div>
+        <script type="text/x-mathjax-config">
+            MathJax.Hub.Config({
+            tex2jax: {inlineMath: [["$","$"]]}
+            });
+            </script>'
       )
     )
   )

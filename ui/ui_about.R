@@ -34,5 +34,8 @@ about <- tabPanel("About",
                     tags$li("Komenda M., Karolyi M., Bulhart V., Žofka J., Brauner T., Hak J., Jarkovský J., Mužík J., Blaha M., Kubát J., Klimeš D., Langhammer P., Daňková Š., Májek O., Bartůňková M., Dušek L. COVID‑19: Přehled aktuální situace v ČR. Onemocnění aktuálně [online]. Praha: Ministerstvo zdravotnictví ČR, 2020 [cit. 23.05.2020]. Dostupné z:", a(href = "https://onemocneni-aktualne.mzcr.cz/covid-19", "https://onemocneni-aktualne.mzcr.cz/covid-19")),
                     tags$li(HTML('Thompson, R. N., Stockwin, J. E., van Gaalen, R. D., Polonsky, J. A., Kamvar, Z. N., Demarsh, P. A., &#x2026; Cori, A. (2019). Improved inference of time-varying reproduction numbers during infectious disease outbreaks. <i>Epidemics</i>, <i>29</i>, 100356.'), a(href = "https://doi.org/10.1016/j.epidem.2019.100356", "https://doi.org/10.1016/j.epidem.2019.100356")),
                     tags$li(HTML('Wallinga, J., Teunis, P. (2004). Different epidemic curves for Severe Acute Respiratory Syndrome reveal similar impacts of control measures. <i>American Journal of Epidemiology</i>, <i>160</i>(6), 509&#x2013;516.'), a(href = "https://doi.org/10.1093/aje/kwh255", "https://doi.org/10.1093/aje/kwh255"))
-                  )
+                  ),
+                  
+                  useShinyalert(),
+                  
 )

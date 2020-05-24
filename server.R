@@ -14,6 +14,8 @@ library(plotly)
 
 server <- function(input, output) {
   
+  shinyalert("", 'The number presented here is <b>only estimate</b> and can be inaccurate and even erroneous.<br><br>Please, read the "About" tab carefully first!', type = "info", confirmButtonText = "Get it", closeOnClickOutside = TRUE, showCancelButton = FALSE, confirmButtonCol = "#32CD32", html = TRUE)
+  
   output$title <-
     renderUI({
       strong(withMathJax("$R_t$", " in Czechia"), style = "font-size:22px")
@@ -179,7 +181,7 @@ server <- function(input, output) {
       scale_colour_manual("", values = "black") +
       labs(x = "Window end date",
            y = "R(t)") +
-      scale_x_date(date_breaks = "4 days") +
+      scale_x_date(date_breaks = "7 days") +
       coord_cartesian(ylim = c(0, 4)) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 40))
@@ -252,7 +254,7 @@ server <- function(input, output) {
       geom_col(aes(text = col_text)) +
       labs(x = "Date",
            y = "Daily incidence [count]") +
-      scale_x_date(date_breaks = "4 days") +
+      scale_x_date(date_breaks = "7 days") +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 40))
     
