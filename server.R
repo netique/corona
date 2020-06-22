@@ -14,7 +14,7 @@ library(plotly)
 
 server <- function(input, output) {
   
-  shinyalert("", 'The number presented here is <b>only estimate</b> and can be inaccurate and even erroneous.<br><br>Please, read the "About" tab carefully first!', type = "info", confirmButtonText = "Get it", closeOnClickOutside = TRUE, showCancelButton = FALSE, confirmButtonCol = "#32CD32", html = TRUE)
+  shinyalert("", 'The number presented here is <b>only an estimate</b> and can be inaccurate and even erroneous.<br><br>Please, read the "About" tab carefully first!', type = "info", confirmButtonText = "Get it", closeOnClickOutside = TRUE, showCancelButton = FALSE, confirmButtonCol = "#32CD32", html = TRUE)
   
   output$title <-
     renderUI({
@@ -65,7 +65,8 @@ server <- function(input, output) {
                   '</span>',
                   sep = "")))
     } else {
-      withMathJax(HTML(paste0("$R_t$ = ",
+      withMathJax(HTML(paste0('<span style=\"font-size: 56px;\">',
+                              "$R_t$ = ",
                   r_num,
                   sep = "")))
     }
@@ -92,7 +93,7 @@ server <- function(input, output) {
       if (input$inc_method == "raw") {
         inc
       } else {
-        inc$I <- mstl(inc$I)[, "Trend"]
+        inc$I <- mstl(inc$I)[, "Trend"] %>% abs
         
         inc
       }
