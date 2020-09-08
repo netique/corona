@@ -66,7 +66,7 @@ persons %>%
   ) +
   theme(
     plot.title = element_text(hjust = .1),
-    plot.subtitle = element_text(hjust = .1, margin = margin(b=10), )
+    plot.subtitle = element_text(hjust = .1, margin = margin(b = 10))
   )
 
 
@@ -77,8 +77,16 @@ persons %>%
   scale_y_continuous(n.breaks = 15) +
   scale_fill_viridis_c() +
   coord_cartesian(expand = FALSE) +
+  labs(
+    title = "Daily incidence by age in Czechia",
+    caption = "by Jan Netík, source at github.com/netique/corona"
+  ) +
   mtaux::theme_mt(
     axis.text.x = element_text(angle = 90, vjust = .5),
     axis.ticks = element_line(color = "gray60"),
-    panel.background = element_rect(fill = "gray80")
+    panel.background = element_rect(fill = "gray80"),
+    plot.caption = element_text(face = "italic")
+  ) +
+  theme(
+    plot.title = element_text(hjust = .075)
   )
