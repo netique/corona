@@ -2,7 +2,11 @@ library(tidyverse)
 library(magrittr)
 library(jsonlite)
 library(lubridate)
-if (!require(mtaux)) {remotes::install_github("netique/mtaux")} # just theme
+if (!require(mtaux)) {
+  remotes::install_github("netique/mtaux")
+} else {
+  library(mtaux)
+} # just theme
 
 persons_all <- fromJSON("https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/osoby.json")
 
@@ -48,10 +52,21 @@ persons %>%
   geom_bin2d(drop = FALSE, binwidth = 1) +
   scale_fill_viridis_c() +
   coord_cartesian(expand = FALSE) +
+  labs(
+    title = "Weekly incidence by age categories in Czechia",
+    subtitle = "only complete weeks (i.e. with sunday observations) are shown",
+    y = "age group",
+    caption = "by Jan Netík, source at github.com/netique/corona"
+  ) +
   mtaux::theme_mt(
     axis.text.x = element_text(angle = 90, vjust = .5),
     axis.ticks = element_line(color = "gray60"),
-    panel.background = element_rect(fill = "gray80")
+    panel.background = element_rect(fill = "gray80"),
+    plot.caption = element_text(face = "italic")
+  ) +
+  theme(
+    plot.title = element_text(hjust = .1),
+    plot.subtitle = element_text(hjust = .1, margin = margin(b=10), )
   )
 
 
