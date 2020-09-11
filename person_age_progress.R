@@ -157,8 +157,9 @@ labs_excess_log <- comparison %>%
   geom_line() +
   scale_y_log10(n.breaks = 5) +
   scale_x_date(date_breaks = "1 week") +
+  ylab("labs exc. inc.") +
   coord_cartesian(expand = FALSE) +
-  mtaux::theme_mt(axis.text.x = element_blank(), axis.title = element_blank())
+  mtaux::theme_mt(axis.text.x = element_blank(), axis.title.x = element_blank())
 
 
 patchwork <- labs_excess + age_time_days + plot_layout(heights = c(1, 5))

@@ -12,8 +12,16 @@ library(forecast)
 library(shinythemes)
 library(plotly)
 library(shinyalert)
+library(patchwork)
+if (!require(mtaux)) {
+  remotes::install_github("netique/mtaux")
+} else {
+  library(mtaux)
+} # just theme
+
 
 source("ui/ui_estimate.R", local = T, encoding = "UTF-8")
+source("ui/ui_age.R", local = T, encoding = "UTF-8")
 source("ui/ui_settings.R", local = T, encoding = "UTF-8")
 source("ui/ui_about.R", local = T, encoding = "UTF-8")
 
@@ -25,6 +33,7 @@ ui <-
     selected = "Estimate",
     
     estimate,
+    incidence_age,
     settings,
     about,
     
